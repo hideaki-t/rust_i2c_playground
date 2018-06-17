@@ -23,7 +23,7 @@ const TSL2561_POWER_ON: u8 = 0b0000_0011;
 
 enum Timing {
     IntegrationTime13,  // 0x00
-    IntegraitonTime101, // 0x01
+    IntegrationTime101, // 0x01
     IntegrationTime402, // 0x02
 }
 
@@ -96,7 +96,7 @@ fn read_data(dev: &mut LinuxI2CDevice, ch: Channel, time: Timing) -> Result<u16,
     };
     let t = match time {
         Timing::IntegrationTime13 => 15,
-        Timing::IntegraitonTime101 => 120,
+        Timing::IntegrationTime101 => 120,
         Timing::IntegrationTime402 => 450,
     };
     let mut buf = [0; 2];
@@ -112,8 +112,8 @@ fn read_data(dev: &mut LinuxI2CDevice, ch: Channel, time: Timing) -> Result<u16,
 fn main() {
     let mut dev = LinuxI2CDevice::new("/dev/i2c-0", 0x39).unwrap();
     check_device(&mut dev).unwrap();
-    set_integration_time_and_gain(&mut dev, Timing::IntegraitonTime101, Gain::Gain1x).unwrap();
-    match read_data(&mut dev, Channel::Chan0, Timing::IntegraitonTime101) {
+    set_integration_time_and_gain(&mut dev, Timing::IntegrationTime101, Gain::Gain1x).unwrap();
+    match read_data(&mut dev, Channel::Chan0, Timing::IntegrationTime101) {
         Ok(data) => println!("{}", data),
         Err(err) => println!("err: {:?}", err),
     };
