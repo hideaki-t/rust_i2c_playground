@@ -40,7 +40,7 @@ enum Channel {
 fn check_device<P: AsRef<Path>>(path: P, addr: u16) -> Result<u8, LinuxI2CError> {
     let mut dev = try!(LinuxI2CDevice::new(path, addr));
     let mut buf: [u8; 1] = [0];
-    try!(dev.write(&[TSL2561_REG_ID]));
+    try!(dev.write(&[TSL2561_REG_ID | TSL2561_COMMAND_BIT]));
     try!(dev.read(&mut buf));
     println!(
         "ID: 0x{:x}, expected: 0x{:x}",
