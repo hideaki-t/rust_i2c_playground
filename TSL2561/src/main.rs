@@ -24,27 +24,34 @@ const TSL2561_POWER_ON: u8 = 0b0000_0011;
 enum Timing {
     IntegrationTime13,  // 0x00
     IntegraitonTime101, // 0x01
-    IntegrationTime402  // 0x02
+    IntegrationTime402, // 0x02
 }
 
 enum Gain {
     Gain1x = 0x00,
-    Gain16x = 0x10
+    Gain16x = 0x10,
 }
 
 enum Channel {
     Chan0,
-    Chan1
+    Chan1,
 }
 
 fn check_device(dev: &mut LinuxI2CDevice) -> Result<u8, LinuxI2CError> {
     let mut buf: [u8; 1] = [0];
-    reg_read(dev, TSL2561_COMMAND_BIT|TSL2561_REG_ID, &mut buf).unwrap();
+    reg_read(dev, TSL2561_COMMAND_BIT | TSL2561_REG_ID, &mut buf).unwrap();
     let partno = (buf[0] >> 4) & 0x0f;
     let rev = buf[0] & 0x0f;
     println!(
         "ID: 0x{:x}, partno: {}({}), rev: 0x{:x}",
-        buf[0], partno, if partno == 0b0101 {"TSL2561"} else {"TSL2560"}, rev
+        buf[0],
+        partno,
+        if partno == 0b0101 {
+            "TSL2561"
+        } else {
+            "TSL2560"
+        },
+        rev
     );
     Ok(buf[0])
 }
@@ -74,19 +81,23 @@ fn poweroff(dev: &mut LinuxI2CDevice) -> Result<(), LinuxI2CError> {
     reg_ctrl(dev, TSL2561_POWER_OFF)
 }
 
-fn set_integration_time_and_gain(dev: &mut LinuxI2CDevice, time: Timing, gain: Gain) -> Result<(), LinuxI2CError> {
-    reg_timing(dev, (time as u8| gain as u8))
+fn set_integration_time_and_gain(
+    dev: &mut LinuxI2CDevice,
+    time: Timing,
+    gain: Gain,
+) -> Result<(), LinuxI2CError> {
+    reg_timing(dev, (time as u8 | gain as u8))
 }
 
 fn read_data(dev: &mut LinuxI2CDevice, ch: Channel, time: Timing) -> Result<u16, LinuxI2CError> {
     let x = match ch {
         Channel::Chan0 => TSL2561_REG_CHAN0_LOW,
-        Channel::Chan1 => TSL2561_REG_CHAN1_LOW
+        Channel::Chan1 => TSL2561_REG_CHAN1_LOW,
     };
     let t = match time {
         Timing::IntegrationTime13 => 15,
         Timing::IntegraitonTime101 => 120,
-        Timing::IntegrationTime402 => 450
+        Timing::IntegrationTime402 => 450,
     };
     let mut buf = [0; 2];
 
