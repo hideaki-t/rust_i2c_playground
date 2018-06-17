@@ -37,50 +37,48 @@ enum Channel {
     Chan1
 }
 
-fn check_device<P: AsRef<Path>>(path: P, addr: u16) -> Result<u8, LinuxI2CError> {
-    let mut dev = try!(LinuxI2CDevice::new(path, addr));
+fn check_device(dev: &mut LinuxI2CDevice) -> Result<u8, LinuxI2CError> {
     let mut buf: [u8; 1] = [0];
-    try!(dev.write(&[TSL2561_REG_ID | TSL2561_COMMAND_BIT]));
-    try!(dev.read(&mut buf));
+    reg_read(dev, TSL2561_COMMAND_BIT|TSL2561_REG_ID, &mut buf).unwrap();
+    let partno = (buf[0] >> 4) & 0x0f;
+    let rev = buf[0] & 0x0f;
     println!(
-        "ID: 0x{:x}, expected: 0x{:x}",
-        buf[0], 0x0a
+        "ID: 0x{:x}, partno: {}({}), rev: 0x{:x}",
+        buf[0], partno, if partno == 0b0101 {"TSL2561"} else {"TSL2560"}, rev
     );
     Ok(buf[0])
 }
 
-fn reg_read<P: AsRef<Path>>(path: P, addr: u16, reg: u8, buf: &mut [u8]) -> Result<(), LinuxI2CError> {
-    let mut dev = try!(LinuxI2CDevice::new(path, addr));
+fn reg_read(dev: &mut LinuxI2CDevice, reg: u8, buf: &mut [u8]) -> Result<(), LinuxI2CError> {
     try!(dev.write(&[reg]));
     dev.read(buf)
 }
 
-fn reg_write<P: AsRef<Path>>(path: P, addr: u16, reg: u8, value: u8) -> Result<(), LinuxI2CError> {
-    let mut dev = try!(LinuxI2CDevice::new(path, addr));
+fn reg_write(dev: &mut LinuxI2CDevice, reg: u8, value: u8) -> Result<(), LinuxI2CError> {
     dev.write(&[reg, value])
 }
 
-fn reg_ctrl<P: AsRef<Path>>(path: P, addr: u16, value: u8) -> Result<(), LinuxI2CError> {
-    reg_write(path, addr, TSL2561_COMMAND_BIT | TSL2561_REG_CONTROL, value)
+fn reg_ctrl(dev: &mut LinuxI2CDevice, value: u8) -> Result<(), LinuxI2CError> {
+    reg_write(dev, TSL2561_COMMAND_BIT | TSL2561_REG_CONTROL, value)
 }
 
-fn reg_timing<P: AsRef<Path>>(path: P, addr: u16, value: u8) -> Result<(), LinuxI2CError> {
-    reg_write(path, addr, TSL2561_COMMAND_BIT | TSL2561_REG_TIMING, value)
+fn reg_timing(dev: &mut LinuxI2CDevice, value: u8) -> Result<(), LinuxI2CError> {
+    reg_write(dev, TSL2561_COMMAND_BIT | TSL2561_REG_TIMING, value)
 }
 
-fn poweron<P: AsRef<Path>>(path: P, addr: u16) -> Result<(), LinuxI2CError> {
-    reg_ctrl(path, addr, TSL2561_POWER_ON)
+fn poweron(dev: &mut LinuxI2CDevice) -> Result<(), LinuxI2CError> {
+    reg_ctrl(dev, TSL2561_POWER_ON)
 }
 
-fn poweroff<P: AsRef<Path>>(path: P, addr: u16) -> Result<(), LinuxI2CError> {
-    reg_ctrl(path, addr, TSL2561_POWER_OFF)
+fn poweroff(dev: &mut LinuxI2CDevice) -> Result<(), LinuxI2CError> {
+    reg_ctrl(dev, TSL2561_POWER_OFF)
 }
 
-fn set_integration_time_and_gain<P: AsRef<Path>>(path: P, addr: u16, time: Timing, gain: Gain) -> Result<(), LinuxI2CError> {
-    reg_timing(path, addr, (time as u8| gain as u8))
+fn set_integration_time_and_gain(dev: &mut LinuxI2CDevice, time: Timing, gain: Gain) -> Result<(), LinuxI2CError> {
+    reg_timing(dev, (time as u8| gain as u8))
 }
 
-fn read_data<P: AsRef<Path>>(path: P, addr: u16, ch: Channel, time: Timing) -> Result<u16, LinuxI2CError> {
+fn read_data(dev: &mut LinuxI2CDevice, ch: Channel, time: Timing) -> Result<u16, LinuxI2CError> {
     let x = match ch {
         Channel::Chan0 => TSL2561_REG_CHAN0_LOW,
         Channel::Chan1 => TSL2561_REG_CHAN1_LOW
@@ -92,18 +90,19 @@ fn read_data<P: AsRef<Path>>(path: P, addr: u16, ch: Channel, time: Timing) -> R
     };
     let mut buf = [0; 2];
 
-    poweroff(&path, addr).unwrap();
-    poweron(&path, addr).unwrap();
+    poweroff(dev).unwrap();
+    poweron(dev).unwrap();
     thread::sleep(Duration::from_millis(t));
     let reg = TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | x;
-    try!(reg_read(path, addr, reg, &mut buf));
+    try!(reg_read(dev, reg, &mut buf));
     Ok(buf[0] as u16 | (buf[1] as u16) << 8)
 }
 
 fn main() {
-    check_device(Path::new("/dev/i2c-0"), 0x39).unwrap();
-    set_integration_time_and_gain(Path::new("/dev/i2c-0"), 0x39, Timing::IntegraitonTime101, Gain::Gain1x).unwrap();
-    match read_data("/dev/i2c-0", 0x39, Channel::Chan0, Timing::IntegraitonTime101) {
+    let mut dev = LinuxI2CDevice::new("/dev/i2c-0", 0x39).unwrap();
+    check_device(&mut dev).unwrap();
+    set_integration_time_and_gain(&mut dev, Timing::IntegraitonTime101, Gain::Gain1x).unwrap();
+    match read_data(&mut dev, Channel::Chan0, Timing::IntegraitonTime101) {
         Ok(data) => println!("{}", data),
         Err(err) => println!("err: {:?}", err),
     };
