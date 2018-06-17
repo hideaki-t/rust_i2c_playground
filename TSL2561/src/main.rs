@@ -101,7 +101,6 @@ fn read_data(dev: &mut LinuxI2CDevice, ch: Channel, time: Timing) -> Result<u16,
     };
     let mut buf = [0; 2];
 
-    poweroff(dev).unwrap();
     poweron(dev).unwrap();
     thread::sleep(Duration::from_millis(t));
     let reg = TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | x;
@@ -117,4 +116,5 @@ fn main() {
         Ok(data) => println!("{}", data),
         Err(err) => println!("err: {:?}", err),
     };
+    poweroff(&mut dev).unwrap();
 }
