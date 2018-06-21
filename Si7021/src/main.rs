@@ -38,6 +38,7 @@ fn dump_info(dev: &mut LinuxI2CDevice) -> Result<u8, LinuxI2CError> {
                 if buf[0] & 0b0000_0100 == 1 { "On" } else { "Off" }
     );
 
+    thread::sleep(Duration::from_millis(25));
     try!(dev.write(&[
         (SI7021_CMD_READ_FIRMWARE_REV >> 8) as u8,
         (SI7021_CMD_READ_FIRMWARE_REV & 0xFF) as u8,
@@ -50,6 +51,7 @@ fn dump_info(dev: &mut LinuxI2CDevice) -> Result<u8, LinuxI2CError> {
     );
 
     let mut buf: [u8; 4] = [0; 4];
+    thread::sleep(Duration::from_millis(25));
     try!(dev.write(&[
         (SI7021_CMD_READ_ID1 >> 8) as u8,
         (SI7021_CMD_READ_ID1 & 0xFF) as u8,
@@ -57,6 +59,8 @@ fn dump_info(dev: &mut LinuxI2CDevice) -> Result<u8, LinuxI2CError> {
     try!(dev.read(&mut buf));
     let ida: u32 =
         (buf[0] as u32) << 24 | (buf[1] as u32) << 16 | (buf[2] as u32) << 8 | buf[3] as u32;
+
+    thread::sleep(Duration::from_millis(25));
     try!(dev.write(&[
         (SI7021_CMD_READ_ID2 >> 8) as u8,
         (SI7021_CMD_READ_ID2 & 0xFF) as u8,
@@ -113,7 +117,6 @@ fn read_rel_humidity(dev: &mut LinuxI2CDevice) -> Result<f32, LinuxI2CError> {
 
 fn read_rel_humidity_and_temp(dev: &mut LinuxI2CDevice) -> Result<(f32, f32), LinuxI2CError> {
     let rh = read_rel_humidity(dev);
-    thread::sleep(Duration::from_millis(25));
     try!(dev.write(&[SI7021_CMD_MEASURE_TEMP_AFTER_RH]));
     thread::sleep(Duration::from_millis(25));
     let mut buf: [u8; 3] = [0; 3];
@@ -125,6 +128,7 @@ fn read_rel_humidity_and_temp(dev: &mut LinuxI2CDevice) -> Result<(f32, f32), Li
 fn main() {
     let mut dev = LinuxI2CDevice::new("/dev/i2c-0", SI7021_SLAVE_ADDRESS).unwrap();
     dump_info(&mut dev).unwrap();
+    thread::sleep(Duration::from_millis(25));
     match read_rel_humidity_and_temp(&mut dev) {
         Ok((t, h)) => println!("temp: {}, relative humidity: {}", t, h),
         Err(err) => println!("err: {:?}", err),
