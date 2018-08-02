@@ -5,10 +5,12 @@ extern crate i2cdev;
 use std::path::Path;
 use std::thread;
 use std::time::Duration;
+use std::env;
 
 use i2cdev::core::*;
 use i2cdev::linux::{LinuxI2CDevice, LinuxI2CError};
 
+const TSL2561_SLAVE_ADDRESS: u16 = 0x39;
 const TSL2561_COMMAND_BIT: u8 = 0b10000000;
 const TSL2561_WORD_BIT: u8 = 0b00100000;
 const TSL2561_REG_CONTROL: u8 = 0x00;
@@ -109,7 +111,9 @@ fn read_data(dev: &mut LinuxI2CDevice, ch: Channel, time: Timing) -> Result<u16,
 }
 
 fn main() {
-    let mut dev = LinuxI2CDevice::new("/dev/i2c-0", 0x39).unwrap();
+    let args: Vec<String> = env::args().collect();
+    let dev = format!("/dev/i2c-{}", args[1]);
+    let mut dev = LinuxI2CDevice::new(dev, TSL2561_SLAVE_ADDRESS).unwrap();
     check_device(&mut dev).unwrap();
     set_integration_time_and_gain(&mut dev, Timing::IntegrationTime101, Gain::Gain1x).unwrap();
     match read_data(&mut dev, Channel::Chan0, Timing::IntegrationTime101) {

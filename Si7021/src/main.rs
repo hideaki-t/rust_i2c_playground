@@ -4,6 +4,7 @@ extern crate i2cdev;
 
 use std::thread;
 use std::time::Duration;
+use std::env;
 
 use i2cdev::core::*;
 use i2cdev::linux::{LinuxI2CDevice, LinuxI2CError};
@@ -126,7 +127,9 @@ fn read_rel_humidity_and_temp(dev: &mut LinuxI2CDevice) -> Result<(f32, f32), Li
 }
 
 fn main() {
-    let mut dev = LinuxI2CDevice::new("/dev/i2c-0", SI7021_SLAVE_ADDRESS).unwrap();
+    let args: Vec<String> = env::args().collect();
+    let dev = format!("/dev/i2c-{}", args[1]);
+    let mut dev = LinuxI2CDevice::new(dev, SI7021_SLAVE_ADDRESS).unwrap();
     dump_info(&mut dev).unwrap();
     thread::sleep(Duration::from_millis(25));
     match read_rel_humidity_and_temp(&mut dev) {
