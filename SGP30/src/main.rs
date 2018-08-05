@@ -24,7 +24,7 @@ const SGP30_FS_PROD_SGP30: u8 = 0;
 const SGP30_TEST_EXPECTED: u16 = 0xd400;
 
 fn dump_info(dev: &mut LinuxI2CDevice) -> Result<(), LinuxI2CError> {
-    let mut buf: [u8; 3] = [0; 3];
+    let mut buf : Vec<u8> = Vec::with_capacity(3);
     try!(dev.write(&SGP30_CMD_GET_FEATURE_SET_VERSION));
     thread::sleep(Duration::from_millis(10));
     try!(dev.read(&mut buf));
@@ -37,7 +37,7 @@ fn dump_info(dev: &mut LinuxI2CDevice) -> Result<(), LinuxI2CError> {
         buf[2]
     );
 
-    let mut buf: [u8; 9] = [0; 9]; // 3*3 = 3 words(2byte), each word has 8bit CRC
+    let mut buf : Vec<u8> = Vec::with_capacity(9);
     try!(dev.write(&SGP30_CMD_GET_SERIAL_ID));
     thread::sleep(Duration::from_millis(1));
     try!(dev.read(&mut buf));
@@ -52,7 +52,7 @@ fn dump_info(dev: &mut LinuxI2CDevice) -> Result<(), LinuxI2CError> {
 }
 
 fn test(dev: &mut LinuxI2CDevice) -> Result<(), LinuxI2CError> {
-    let mut buf: [u8; 3] = [0; 3];
+    let mut buf : Vec<u8> = Vec::with_capacity(3);
     try!(dev.write(&SGP30_CMD_MEASURE_TEST));
     thread::sleep(Duration::from_millis(220));
     try!(dev.read(&mut buf));
@@ -68,7 +68,7 @@ fn init(dev: &mut LinuxI2CDevice) -> Result<(), LinuxI2CError> {
 }
 
 fn measure(dev: &mut LinuxI2CDevice) -> Result<(), LinuxI2CError> {
-    let mut buf: [u8; 6] = [0; 6];
+    let mut buf : Vec<u8> = Vec::with_capacity(6);
     try!(dev.write(&SGP30_CMD_MEASURE_AIR_QUALITY));
     thread::sleep(Duration::from_millis(12));
     try!(dev.read(&mut buf));
